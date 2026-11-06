@@ -1,0 +1,9 @@
+weather_reserve=rotto
+position_x=15
+language=xx
+color=ciano
+appearance=dark
+style=b
+theme=lime
+bar_show=disks,network,altro
+tab_cpu=1=2
