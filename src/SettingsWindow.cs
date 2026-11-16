@@ -20,7 +20,7 @@ public partial class SettingsWindow : Form {
     readonly Box cDetached = new Box();
     readonly Radio rCapsules = new Radio(), rClassic = new Radio();
     readonly Box pDisks = new Box(), pNetwork = new Box(), pCpu = new Box(),
-                     pGpu = new Box(), pRam = new Box();
+                     pGpu = new Box(), pRam = new Box(), pCommit = new Box();
     readonly Label lLogo = new Label { AutoEllipsis = true };
     readonly Box cShow = new Box();
     readonly Box cNotifications = new Box();
@@ -36,7 +36,7 @@ public partial class SettingsWindow : Form {
     bool checkedState;
     string checkTime = "";
     string style, pieces, language, color, mode;
-    bool compact, detached, show, notifications, startup;
+    bool compact, detached, show, notifications, startup, commit;
 
     public static void Open() {
         if (Current == null) {
@@ -69,7 +69,7 @@ public partial class SettingsWindow : Form {
 
         gAppearance.Controls.AddRange(new Control[] { cCompact, cDetached });
         gStyle.Controls.AddRange(new Control[] { rCapsules, rClassic });
-        gShow.Controls.AddRange(new Control[] { pDisks, pNetwork, pCpu, pGpu, pRam, lLogo });
+        gShow.Controls.AddRange(new Control[] { pDisks, pNetwork, pCpu, pGpu, pRam, pCommit, lLogo });
         gBar.Controls.AddRange(new Control[] { cShow, cNotifications, cStartup });
         gTools.Controls.AddRange(new Control[] { bRedo, bFolder, lState });
         gLanguage.Controls.Add(cLanguage);
@@ -92,7 +92,7 @@ public partial class SettingsWindow : Form {
         style = Program.Bar != null ? Program.Bar.Style : Settings.Read("style", "b");
         (style == "a" ? rClassic : rCapsules).Checked = true;
         pDisks.Checked = Drawing.Show("disks"); pNetwork.Checked = Drawing.Show("network"); pCpu.Checked = Drawing.Show("cpu");
-        pGpu.Checked = Drawing.Show("gpu"); pRam.Checked = Drawing.Show("ram");
+        pGpu.Checked = Drawing.Show("gpu"); pRam.Checked = Drawing.Show("ram"); pCommit.Checked = Drawing.Show("commit");
         cShow.Checked = Settings.Read("hidden", "no") != "yes";
         cNotifications.Checked = Notification.Choices();
         cStartup.Checked = UpdateChecker.Active();
@@ -101,7 +101,7 @@ public partial class SettingsWindow : Form {
 
         EventHandler changed = delegate { bApply.Enabled = Different(); };
         foreach (var r in new[] { rCapsules, rClassic }) r.CheckedChanged += changed;
-        foreach (var c in new[] { cCompact, cDetached, pDisks, pNetwork, pCpu, pGpu, pRam, cShow, cNotifications, cStartup }) c.CheckedChanged += changed;
+        foreach (var c in new[] { cCompact, cDetached, pDisks, pNetwork, pCpu, pGpu, pRam, pCommit, cShow, cNotifications, cStartup }) c.CheckedChanged += changed;
         cLanguage.SelectedIndexChanged += changed;
         cColor.SelectedIndexChanged += changed;
         cMode.SelectedIndexChanged += changed;
@@ -126,7 +126,7 @@ public partial class SettingsWindow : Form {
         cDetached.Texts(Language.T("common.detached"), Language.T("settings.note.detached"));
         rCapsules.Texts(Language.T("settings.capsules"), null); rClassic.Texts(Language.T("settings.classic"), null);
         pDisks.Texts(Language.T("common.disks"), null); pNetwork.Texts(Language.T("common.network"), null); pCpu.Texts(Language.T("overview.processor_title"), null);
-        pGpu.Texts(Language.T("settings.graphics_card"), null); pRam.Texts(Language.T("settings.memory"), null);
+        pGpu.Texts(Language.T("settings.graphics_card"), null); pRam.Texts(Language.T("settings.memory"), null); pCommit.Texts(Language.T("settings.commit"), null);
         lLogo.Text = Language.T("settings.logo");
         cShow.Texts(Language.T("settings.show_on_taskbar"), Language.T("settings.note.show_on_taskbar"));
         cNotifications.Texts(Language.T("common.notifications"), Language.T("settings.note.notifications"));
@@ -169,10 +169,10 @@ public partial class SettingsWindow : Form {
         return l.Count == 0 ? "logo" : string.Join(",", l.ToArray());
     }
     void Remember() {
-        pieces = ChosenPieces(); compact = cCompact.Checked; detached = cDetached.Checked; style = ChosenStyle(); show = cShow.Checked; notifications = cNotifications.Checked; startup = cStartup.Checked; language = ChoiceLanguage(); color = ChosenColor(); mode = ChosenMode();
+        pieces = ChosenPieces(); commit = pCommit.Checked; compact = cCompact.Checked; detached = cDetached.Checked; style = ChosenStyle(); show = cShow.Checked; notifications = cNotifications.Checked; startup = cStartup.Checked; language = ChoiceLanguage(); color = ChosenColor(); mode = ChosenMode();
         bApply.Enabled = false;
     }
-    bool Different() { return ChosenPieces() != pieces || cCompact.Checked != compact || cDetached.Checked != detached || ChosenStyle() != style || cShow.Checked != show || cNotifications.Checked != notifications || cStartup.Checked != startup || ChoiceLanguage() != language || ChosenColor() != color || ChosenMode() != mode; }
+    bool Different() { return ChosenPieces() != pieces || pCommit.Checked != commit || cCompact.Checked != compact || cDetached.Checked != detached || ChosenStyle() != style || cShow.Checked != show || cNotifications.Checked != notifications || cStartup.Checked != startup || ChoiceLanguage() != language || ChosenColor() != color || ChosenMode() != mode; }
 
     public void ChangedAppearance() {
         compact = Program.Compact(); detached = Program.Detached();
@@ -191,6 +191,7 @@ public partial class SettingsWindow : Form {
         bool hide = show && !cShow.Checked;
         if (ChosenStyle() != style) Settings.Write("style", ChosenStyle());
         if (ChosenPieces() != pieces) Settings.Write("bar_show", ChosenPieces());
+        if (pCommit.Checked != commit) Settings.Write("bar_commit", pCommit.Checked ? "yes" : "no");
         if (cShow.Checked != show) Settings.Write("hidden", cShow.Checked ? "no" : "yes");
         if (cStartup.Checked != startup) Settings.Write("updates", cStartup.Checked ? "yes" : "no");
         bool newNotifications = cNotifications.Checked, changed = newNotifications != notifications;
@@ -228,7 +229,7 @@ public partial class SettingsWindow : Form {
         foreach (var e in new[] { cLanguage, cColor, cMode }) needs = Math.Max(needs, 3 * (Entry(e) + S(68)));
         needs = Math.Max(needs, 2 * Math.Max(Wide(bRedo.Text), Wide(bFolder.Text)) + S(48));
         needs = Math.Max(needs, Wide(Language.T("settings.hardware_done", "time", "00:00")) + S(4));
-        foreach (var c in new[] { pDisks, pNetwork, pCpu, pGpu, pRam }) needs = Math.Max(needs, 3 * (bare + Wide(c.Text)));
+        foreach (var c in new[] { pDisks, pNetwork, pCpu, pGpu, pRam, pCommit }) needs = Math.Max(needs, 3 * (bare + Wide(c.Text)));
         int width = Math.Min(needs + reserved, S(760)), margin = S(16), inner = width - 2 * margin - 2 * S(14), x = S(14), row = S(26), start = S(38), end = S(10);
         int y = margin;
         Func<Group, int, int> Put = (g, h) => { g.Bounds = new Rectangle(margin, y, width - 2 * margin, h); y += h + S(10); return h; };
@@ -253,6 +254,7 @@ public partial class SettingsWindow : Form {
         int third = inner / 3;
         pDisks.Bounds = new Rectangle(x, start, third, row);
         pNetwork.Bounds = new Rectangle(x + third, start, third, row);
+        pCommit.Bounds = new Rectangle(x + 2 * third, start, third, row);
         pCpu.Bounds = new Rectangle(x, start + row, third, row);
         pGpu.Bounds = new Rectangle(x + third, start + row, third, row);
         pRam.Bounds = new Rectangle(x + 2 * third, start + row, third, row);
@@ -351,10 +353,12 @@ public partial class SettingsWindow : Form {
     class Caption : Button {
         public Caption() { DoubleBuffered = true; UseMnemonic = false; FlatStyle = FlatStyle.Flat; FlatAppearance.BorderSize = 0; Cursor = Cursors.Hand; }
         protected override void OnPaint(PaintEventArgs e) {
-            e.Graphics.Clear(BackColor);
-            bool above = ClientRectangle.Contains(PointToClient(Cursor.Position));
-            using (var f = new Font(Font, FontStyle.Underline))
-                TextRenderer.DrawText(e.Graphics, Text, f, ClientRectangle, above || Focused ? Drawing.TEXT : Drawing.MUTED, TextFormatFlags.SingleLine | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            SafePaint.Run("settings", e.Graphics, ClientRectangle, BackColor, Drawing.MUTED, () => {
+                e.Graphics.Clear(BackColor);
+                bool above = ClientRectangle.Contains(PointToClient(Cursor.Position));
+                using (var f = new Font(Font, FontStyle.Underline))
+                    TextRenderer.DrawText(e.Graphics, Text, f, ClientRectangle, above || Focused ? Drawing.TEXT : Drawing.MUTED, TextFormatFlags.SingleLine | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            });
         }
     }
 
@@ -370,8 +374,8 @@ public partial class SettingsWindow : Form {
             bold = new Font("Segoe UI Semibold", 10f * 96f / 72f * k, GraphicsUnit.Pixel);
             Invalidate();
         }
-        protected override void OnPaint(PaintEventArgs e) {
-            var g = e.Graphics;
+        protected override void OnPaint(PaintEventArgs e) { SafePaint.Run("settings", e.Graphics, ClientRectangle, PANEL, Drawing.MUTED, () => Outline(e.Graphics)); }
+        void Outline(Graphics g) {
             g.SmoothingMode = SmoothingMode.AntiAlias;
             int d = (int)(12 * k);
             var r = new Rectangle(0, 0, Width - 1, Height - 1);
@@ -388,14 +392,14 @@ public partial class SettingsWindow : Form {
         string note;
         public Radio() { DoubleBuffered = true; }
         public void Texts(string text, string note) { Text = text; this.note = note; Invalidate(); }
-        protected override void OnPaint(PaintEventArgs e) { Tick(e.Graphics, this, Checked, true, note, Focused && ShowFocusCues); }
+        protected override void OnPaint(PaintEventArgs e) { SafePaint.Run("settings", e.Graphics, ClientRectangle, BackColor, Drawing.MUTED, () => Tick(e.Graphics, this, Checked, true, note, Focused && ShowFocusCues)); }
     }
     class Box : CheckBox {
         string note;
         public string Note { get { return note; } }
         public Box() { DoubleBuffered = true; }
         public void Texts(string text, string note) { Text = text; this.note = note; Invalidate(); }
-        protected override void OnPaint(PaintEventArgs e) { Tick(e.Graphics, this, Checked, false, note, Focused && ShowFocusCues); }
+        protected override void OnPaint(PaintEventArgs e) { SafePaint.Run("settings", e.Graphics, ClientRectangle, BackColor, Drawing.MUTED, () => Tick(e.Graphics, this, Checked, false, note, Focused && ShowFocusCues)); }
     }
 
     static void Tick(Graphics g, ButtonBase c, bool started, bool round, string note, bool focus) {

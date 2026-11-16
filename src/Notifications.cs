@@ -56,6 +56,7 @@ public class Notifications {
         Piece("cpu", c.Cpu, now); Piece("gpu", c.Gpu, now); Piece("ram", c.Ram, now);
         Hot("cpu", c.CpuTemp, CPU_HOT, now); Hot("gpu", c.GpuTemp, GPU_HOT, now);
         foreach (var kv in c.AlmostFullDisks) Mark("full:" + kv.Key, kv.Value, null, now);
+        if (c.CommitFree >= 0 && c.CommitFree < c.CommitReserve) Mark("commit", c.CommitFree, null, now);
         foreach (var v in c.Entries) if (v.Percent >= PROGRAM_THRESHOLD) Mark("app:" + v.Piece + ":" + v.Key, v.Percent, v, now);
         if (c.NotResponding != null) Mark("hung:" + c.NotResponding.Key, 100, c.NotResponding, now);
         foreach (var k in tallies.Where(kv => now - kv.Value.Above > GAP).Select(kv => kv.Key).ToList()) tallies.Remove(k);
@@ -110,6 +111,7 @@ public class Notifications {
         var ready = tallies.Where(kv => !kv.Key.StartsWith("hot:") && kv.Value.Above == now && now - kv.Value.StartTime >= STABLE && PlaceDetached(kv.Key, now)).ToList();
         foreach (var kv in tallies.Where(x => x.Key.StartsWith("hot:") && x.Value.Above == now && now - x.Value.StartTime >= HOT_STABLE && PlaceDetached(x.Key, now)).OrderByDescending(x => x.Value.Average))
             return Heat(kv.Key, kv.Value);
+        if (ready.Any(x => x.Key == "commit")) return CommitLow(c);
         foreach (var kv in ready.Where(x => x.Key.StartsWith("app:")).OrderByDescending(x => x.Value.Average)) return ProgramNotice(kv.Key, kv.Value);
         foreach (var kv in ready.Where(x => x.Key.StartsWith("tot:")).OrderByDescending(x => x.Value.Average)) return Total(kv.Key, kv.Value, c);
         foreach (var kv in ready.Where(x => x.Key.StartsWith("full:")).OrderBy(x => x.Key)) return DiskFull(kv.Key, c);
@@ -138,6 +140,11 @@ public class Notifications {
         string end = v.Windows ? Language.T("notification.leave_it") + " " + Language.T("notification.restart_if_lasts") : Language.T("notification.close_it");
         return new Notice { Level = 1, Cause = cause, Title = Language.T("notification.title.might"), Flyout = FlyoutOf(v.Piece), App = v.Windows ? null : v.App,
                             Text = usage + " " + (v.Explain != null ? v.Explain + " " : "") + Language.T("notification.slows") + " " + end };
+    }
+
+    static Notice CommitLow(Sample c) {
+        return new Notice { Level = 1, Cause = "commit", Title = Language.T("notification.title.might"), Flyout = "ram",
+                            Text = Language.T("notification.commit_low", "free", Drawing.FreeGb((float)c.CommitFree, false), "reserve", Drawing.FreeGb((float)c.CommitReserve, false)) };
     }
 
     static Notice DiskFull(string cause, Sample c) {

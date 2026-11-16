@@ -305,12 +305,13 @@ public static partial class Drawing {
                 new[] { Language.T("ram.free"), Giga(o.PlaceDetached) }, new[] { Language.T("ram.compressed"), o.Compressed > 0 ? Giga(o.Compressed) : "--" },
                 new[] { Language.T("ram.paged_pool"), Giga(o.Paging) }, new[] { Language.T("ram.nonpaged_pool"), Giga(o.NonPaging) } };
             var marks = new Color[] { ACCENT, Color.Empty, Theme.Current.Cache, Theme.Current.Modified, EMPTY, Color.Empty, Color.Empty, Color.Empty };
+            bool lowCommit = o.Limit > 0 && o.Committed >= 0 && (o.Limit - o.Committed) / 1073741824.0 < CommitReserve();
             int column = (k.Width - 2 * k.Pad - k.P(20)) / 2, hv = k.P(21);
             for (int i = 0; i < entries.Length; i++) {
                 int xv = k.Pad + (i % 2) * (column + k.P(20)), yv = y + (i / 2) * hv, q = k.P(8);
                 if (marks[i] != Color.Empty) DiskFull(k.G, new Rectangle(xv, yv + (hv - q) / 2, q, q), k.P(2), marks[i]);
                 TTrim(k.G, entries[i][0], k.Small, xv + k.P(14), yv, column - k.P(14) - W(k.G, entries[i][1], k.Bold) - k.P(6), hv, MUTED);
-                TRight(k.G, entries[i][1], k.Bold, xv + column, yv, hv, TEXT);
+                TRight(k.G, entries[i][1], k.Bold, xv + column, yv, hv, i == 1 && lowCommit ? RED : TEXT);
             }
             y += (entries.Length + 1) / 2 * hv;
         }

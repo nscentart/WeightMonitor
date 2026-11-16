@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 $suites = "--test-security", "--test-notifications", "--test-flyouts", "--test-themes", "--test-close",
-          "--test-languages", "--test-license", "--test-etw", "--test-disks", "--test-migration"
+          "--test-languages", "--test-license", "--test-etw", "--test-disks", "--test-paint", "--test-migration"
 $resultOption = "--result"
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 $sandbox = Join-Path ([IO.Path]::GetTempPath()) ("wm-test-" + [Guid]::NewGuid().ToString("N"))

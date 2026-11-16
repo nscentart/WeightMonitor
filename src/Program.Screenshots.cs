@@ -11,7 +11,7 @@ public static partial class Program {
         var d = new SensorData();
         d.CpuName = "AMD Ryzen 9 9950X3D"; d.GpuName = "NVIDIA GeForce RTX 5090";
         d.Cpu.Usage = 12; d.Cpu.Temp = 74; d.Gpu.Usage = 9; d.Gpu.Temp = 48; d.Ram.Usage = 42; d.Ram.Temp = 41;
-        d.UsedRam = 53.1f; d.TotalRam = 126f;
+        d.UsedRam = 53.1f; d.TotalRam = 126f; d.CommitUsed = 61.4f; d.CommitTotal = 146f;
         d.Disks.Add(new Disk { Number = 1, Model = "Samsung SSD 9100 PRO 1TB", Type = "SSD", Bus = "NVMe", Byte = 1000202273280, Letters = new List<char> { 'C' }, Space = new Dictionary<char, long[]> { { 'C', new[] { 412000000000L, 1000202273280L } } }, Usage = 3, Temp = 38 });
         d.Disks.Add(new Disk { Number = 2, Model = "Samsung SSD 9100 PRO 2TB", Type = "SSD", Bus = "NVMe", Byte = 2000396321280, Letters = new List<char> { 'D' }, Space = new Dictionary<char, long[]> { { 'D', new[] { 1240000000000L, 2000396321280L } } }, Usage = 1, Temp = 35 });
         d.Disks.Add(new Disk { Number = 0, Model = "ST8000NM000A-2KE101", Type = "HDD", Bus = "SATA", Byte = 8001560609280, Letters = new List<char> { 'E' }, Space = new Dictionary<char, long[]> { { 'E', new[] { 12300000000L, 8001560609280L } } }, Usage = 99, Temp = 41 });

@@ -32,16 +32,44 @@ public static partial class Drawing {
     static Bitmap logoBase;
     static readonly Dictionary<string, Bitmap> logos = new Dictionary<string, Bitmap>();
     static readonly Dictionary<string, Bitmap> icons = new Dictionary<string, Bitmap>();
+    public static int FailTest;
 
-    public static Color Hot(float t) { return t < 0 ? MUTED : t >= 80 ? RED : t >= 60 ? AMBER : GOOD; }
-    public static string FormatPercent(float v) { return v < 0 ? "--" : Math.Round(v).ToString("0") + "%"; }
-    public static string FormatTemp(float t, bool longValue) { return t < 0 ? "--" : Math.Round(t).ToString("0") + (longValue ? " °C" : "°"); }
+    public static void ResetCaches() {
+        logoBase = null;
+        logos.Clear();
+        icons.Clear();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+    }
+    public static int Cached { get { return (logoBase != null ? 1 : 0) + logos.Count + icons.Count; } }
+
+    public const float MAX_PERCENT = 100.5f, MAX_TEMP = 150f;
+    public static bool Odd(double v, double max) { return double.IsNaN(v) || double.IsInfinity(v) || v > max; }
+    public static Color Hot(float t) { return t < 0 || Odd(t, MAX_TEMP) ? MUTED : t >= 80 ? RED : t >= 60 ? AMBER : GOOD; }
+    public static string FormatPercent(float v) { return Odd(v, MAX_PERCENT) ? SafePaint.MISSING : v < 0 ? "--" : Math.Round(v).ToString("0") + "%"; }
+    public static string FormatTemp(float t, bool longValue) { return Odd(t, MAX_TEMP) ? SafePaint.MISSING : t < 0 ? "--" : Math.Round(t).ToString("0") + (longValue ? " °C" : "°"); }
+    public const float COMMIT_RESERVE = 10f;
+    public static float CommitReserve() {
+        float v;
+        string s = Settings.Read("commit_reserve", "");
+        return float.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out v) && v >= 0 && v < 100000 ? v : COMMIT_RESERVE;
+    }
+    public static bool CommitLow(SensorData d) { float free = d == null ? -1f : d.CommitFree(); return free >= 0 && free < CommitReserve(); }
+    public static Color CommitColor(SensorData d) { return d == null || d.CommitFree() < 0 ? MUTED : CommitLow(d) ? RED : GOOD; }
+    public static string FreeGb(float gb, bool shortForm) {
+        if (Odd(gb, 1e7)) return SafePaint.MISSING;
+        if (gb < 0) return "--";
+        return gb.ToString(gb < 10 ? "0.0" : "0", CultureInfo.InvariantCulture) + (shortForm ? "G" : " GB");
+    }
+    static float Fill(float usage) { return Odd(usage, MAX_PERCENT) || usage <= 0 ? 0 : Math.Min(100f, usage); }
     public static Color SpeedColor(double b) {
-        if (b < 0) return MUTED;
+        if (b < 0 || Odd(b, double.MaxValue)) return MUTED;
         return b < 100 * 1024 ? GOOD : b < 1024 * 1024 ? YELLOW : b < 10 * 1024 * 1024 ? ORANGE : RED;
     }
 
     public static string Speed(double b) {
+        if (Odd(b, double.MaxValue)) return SafePaint.MISSING;
         if (b < 0) return "--";
         double k = b / 1024.0;
         if (k < 1024) return k.ToString("0.0", CultureInfo.InvariantCulture) + " K/s";
@@ -165,6 +193,7 @@ public static partial class Drawing {
     static Font FontN(int height) { return new Font("Segoe UI", Math.Max(8f, height / 2f * 0.58f), FontStyle.Bold, GraphicsUnit.Pixel); }
 
     static string DISKS { get { return Language.T("bar.disks"); } }
+    static string COMMIT { get { return Language.T("bar.commit"); } }
 
     public static int Width(Graphics g, int height, string style, string shape, int letters) {
         return Draw(g, new Rectangle(0, 0, 0, height), null, style, shape, letters).Count == 0 ? 0 : lastWidth;
@@ -175,6 +204,7 @@ public static partial class Drawing {
     static bool Glass(string style) { return style != "b" && (LightBar || Theme.Current.Light); }
 
     public static List<Zone> Draw(Graphics g, Rectangle r, SensorData d, string style, string shape, int letters) {
+        if (FailTest > 0) { FailTest--; throw new OutOfMemoryException("paint test"); }
         var windows = Theme.Swap(Theme.Bar);
         try { return DrawBar(g, r, d, style, shape, letters); } finally { Theme.Swap(windows); }
     }
@@ -212,10 +242,10 @@ public static partial class Drawing {
             zones.Add(new Zone(new Rectangle(x, r.Y, w, height), "logo"));
             logoEnd = x + w;
             x += w + (style == "b" ? height / 6 : height / 4);
-            if (style != "b" && BarChoice() != "logo") { if (draw) Separate(g, x, r.Y, height); x += height / 4; }
+            if (style != "b" && (BarChoice() != "logo" || Show("commit"))) { if (draw) Separate(g, x, r.Y, height); x += height / 4; }
         }
         bool vDisks = Show("disks"), vNetwork = Show("network");
-        var cores = new[] { "cpu", "gpu", "ram" }.Where(Show).ToArray();
+        var cores = new[] { "cpu", "gpu", "ram", "commit" }.Where(Show).ToArray();
         if (!vDisks && !vNetwork && cores.Length == 0) { lastWidth = logoEnd - r.X; return zones; }
         if (style == "b") {
             using (Font fv = FontV(height)) using (Font fn = FontN(height)) {
@@ -243,14 +273,17 @@ public static partial class Drawing {
                     x += wNetwork + gapC;
                 }
                 if (cores.Length > 0) {
-                    int wCore = pad * 2 + cores.Length * vn + (cores.Length - 1) * gapV;
+                    int vc = Math.Max(vn, W(g, COMMIT, fn) + 4 + Math.Max(W(g, "100%", fv), W(g, "999G", fv)) + 5 + 4);
+                    Func<string, int> wb = c => c == "commit" ? vc : vn;
+                    int wCore = pad * 2 + cores.Sum(wb) + (cores.Length - 1) * gapV;
                     if (draw) Capsule(g, new Rectangle(x, r.Y, wCore, height));
                     int xi = x + pad;
                     for (int i = 0; i < cores.Length; i++) {
-                        if (draw) { var m = Core(d, cores[i]); EntryB(g, fn, fv, xi, r.Y, height, vn, cores[i].ToUpperInvariant(), m.Usage, m.Temp); }
-                        int sin = i == 0 ? x : xi - gapV / 2, des = i == cores.Length - 1 ? x + wCore : xi + vn + gapV / 2;
+                        int vi = wb(cores[i]);
+                        if (draw) PieceB(g, fn, fv, xi, r.Y, height, vi, d, cores[i]);
+                        int sin = i == 0 ? x : xi - gapV / 2, des = i == cores.Length - 1 ? x + wCore : xi + vi + gapV / 2;
                         zones.Add(new Zone(new Rectangle(sin, r.Y, des - sin, height), cores[i]));
-                        xi += vn + gapV;
+                        xi += vi + gapV;
                     }
                     x += wCore + gapC;
                 }
@@ -278,12 +311,13 @@ public static partial class Drawing {
                 }
                 if (cores.Length > 0) {
                     if (!first) { if (draw) Separate(g, x, r.Y, height); x += gap; }
-                    int x0 = x;
+                    int commitWidth = Math.Max(core, Math.Max(W(g, COMMIT + " 100%", f), W(g, "999 GB", f)));
                     for (int i = 0; i < cores.Length; i++) {
-                        if (draw) { var m = Core(d, cores[i]); ColumnA(g, f, x0 + i * (core + gap), r.Y, row, core, cores[i].ToUpperInvariant(), m.Usage, m.Temp); }
-                        zones.Add(new Zone(new Rectangle(x0 + i * (core + gap) - (i == 0 ? 0 : gap / 2), r.Y, core + (i == 0 ? gap / 2 : gap), height), cores[i]));
+                        int wi = cores[i] == "commit" ? commitWidth : core;
+                        if (draw) PieceA(g, f, x, r.Y, row, wi, d, cores[i]);
+                        zones.Add(new Zone(new Rectangle(x - (i == 0 ? 0 : gap / 2), r.Y, wi + (i == 0 ? gap / 2 : gap), height), cores[i]));
+                        x += wi + gap;
                     }
-                    x += cores.Length * core + (cores.Length - 1) * gap + gap;
                 }
             }
         }
@@ -299,14 +333,30 @@ public static partial class Drawing {
         string v = ScreenshotTest ?? Settings.Read("bar_show", BAR_ALL);
         return string.IsNullOrWhiteSpace(v) ? BAR_ALL : v;
     }
-    public static bool Show(string piece) { return BarChoice().Split(',').Contains(piece); }
+    public static bool Show(string piece) {
+        if (piece == "commit" && ScreenshotTest == null) return Settings.Read("bar_commit", "yes") != "no";
+        return BarChoice().Split(',').Contains(piece);
+    }
 
+    static void PieceA(Graphics g, Font f, int x, int y, int row, int width, SensorData d, string piece) {
+        if (piece == "commit") { ColumnA(g, f, x, y, row, width, COMMIT, d.CommitPercent(), FreeGb(d.CommitFree(), false), CommitColor(d), CommitLow(d)); return; }
+        var m = Core(d, piece);
+        ColumnA(g, f, x, y, row, width, piece.ToUpperInvariant(), m.Usage, FormatTemp(m.Temp, true), Hot(m.Temp), false);
+    }
+    static void PieceB(Graphics g, Font fn, Font fv, int x, int y, int height, int width, SensorData d, string piece) {
+        if (piece == "commit") { EntryB(g, fn, fv, x, y, height, width, COMMIT, d.CommitPercent(), FreeGb(d.CommitFree(), true), CommitColor(d), CommitLow(d)); return; }
+        var m = Core(d, piece);
+        EntryB(g, fn, fv, x, y, height, width, piece.ToUpperInvariant(), m.Usage, FormatTemp(m.Temp, false), Hot(m.Temp), false);
+    }
     static void ColumnA(Graphics g, Font f, int x, int y, int row, int width, string name, float usage, float temp) {
-        if (usage > 0) using (var b = new SolidBrush(BAR_A)) g.FillRectangle(b, x, y + 2, Math.Max(1, (int)(width * usage / 100f)), row - 4);
+        ColumnA(g, f, x, y, row, width, name, usage, FormatTemp(temp, true), Hot(temp), false);
+    }
+    static void ColumnA(Graphics g, Font f, int x, int y, int row, int width, string name, float usage, string second, Color secondColor, bool alarm) {
+        if (Fill(usage) > 0) using (var b = new SolidBrush(BAR_A)) g.FillRectangle(b, x, y + 2, Math.Max(1, (int)(width * Fill(usage) / 100f)), row - 4);
         int wn = W(g, name + " ", f);
         T(g, name + " ", f, x, y, row, LABEL);
-        T(g, FormatPercent(usage), f, x + wn, y, row, TEXT);
-        T(g, FormatTemp(temp, true), f, x, y + row, row, Hot(temp));
+        T(g, FormatPercent(usage), f, x + wn, y, row, alarm ? RED : TEXT);
+        T(g, second, f, x, y + row, row, secondColor);
     }
     static void Separate(Graphics g, int x, int y, int height) {
         using (var p = new Pen(BORDER)) g.DrawLine(p, x - 1, y + height / 6, x - 1, y + height - height / 6);
@@ -321,16 +371,19 @@ public static partial class Drawing {
         g.SmoothingMode = old;
     }
     static void EntryB(Graphics g, Font fn, Font fv, int x, int y, int height, int width, string name, float usage, float temp) {
+        EntryB(g, fn, fv, x, y, height, width, name, usage, FormatTemp(temp, false), Hot(temp), false);
+    }
+    static void EntryB(Graphics g, Font fn, Font fv, int x, int y, int height, int width, string name, float usage, string second, Color secondColor, bool alarm) {
         int row = height / 2, wn = W(g, name, fn);
         T(g, name, fn, x, y, height, LABEL);
         int xv = x + wn + 4;
-        T(g, FormatPercent(usage), fv, xv, y + 1, row - 1, TEXT);
-        T(g, FormatTemp(temp, false), fv, xv, y + row - 1, row, Hot(temp));
+        T(g, FormatPercent(usage), fv, xv, y + 1, row - 1, alarm ? RED : TEXT);
+        T(g, second, fv, xv, y + row - 1, row, secondColor);
         int hb = height * 62 / 100, yb = y + (height - hb) / 2, xb = x + width - 4;
         using (var v = new SolidBrush(EMPTY)) g.FillRectangle(v, xb, yb, 3, hb);
-        if (usage > 0) {
-            int h = Math.Max(2, (int)(hb * usage / 100f));
-            using (var b = new SolidBrush(usage >= 90 ? RED : ACCENT)) g.FillRectangle(b, xb, yb + hb - h, 3, h);
+        if (Fill(usage) > 0) {
+            int h = Math.Max(2, (int)(hb * Fill(usage) / 100f));
+            using (var b = new SolidBrush(usage >= 90 || alarm ? RED : ACCENT)) g.FillRectangle(b, xb, yb + hb - h, 3, h);
         }
     }
 
@@ -352,10 +405,15 @@ public static partial class Drawing {
             case "core": return (d.CpuName.Length > 0 ? d.CpuName + "\n" : "") + (d.GpuName.Length > 0 ? d.GpuName + "\n" : "") + core;
             case "cpu": return (d.CpuName.Length > 0 ? d.CpuName + "\n" : "") + "CPU " + FormatPercent(d.Cpu.Usage) + " " + FormatTemp(d.Cpu.Temp, false) + "\n" + click;
             case "gpu": return (d.GpuName.Length > 0 ? d.GpuName + "\n" : "") + "GPU " + FormatPercent(d.Gpu.Usage) + " " + FormatTemp(d.Gpu.Temp, false) + "\n" + click;
+            case "commit": return CommitText(d, "tip.commit") + (CommitLow(d) ? "\n" + Language.T("tip.commit_low", "reserve", FreeGb(CommitReserve(), false)) : "") + "\n" + click;
             case "ram": return "RAM " + FormatPercent(d.Ram.Usage) + (d.TotalRam > 0 ? Language.T("tip.ram_gb", "used", d.UsedRam.ToString("0.0", CultureInfo.InvariantCulture), "total", Math.Round(d.TotalRam).ToString("0")) : "")
                                + (d.Ram.Temp < 0 ? "" : " " + FormatTemp(d.Ram.Temp, false)) + "\n" + click;
         }
         return "";
+    }
+
+    static string CommitText(SensorData d, string key) {
+        return Language.T(key, "used", FreeGb(d.CommitUsed, false), "total", FreeGb(d.CommitTotal, false), "free", FreeGb(d.CommitFree(), false));
     }
 
     public static int FlyoutWidth(string type, float s) { return (int)((type == "all" ? 430 : 470) * s); }
@@ -598,6 +656,10 @@ public static partial class Drawing {
         y = Line(k, y); ya = y;
         string ram = d.TotalRam > 0 ? Language.T("overview.ram_in_use", "used", d.UsedRam.ToString("0.0", CultureInfo.InvariantCulture), "total", Math.Round(d.TotalRam).ToString("0")) : Language.T("overview.in_use");
         y = CoreRow(k, y, "RAM", ram, Language.T(d.Ram.Temp < 0 ? "common.no_module_temperature" : "overview.hottest_module"), d.Ram.Usage, d.Ram.Temp);
+        if (d.CommitFree() >= 0) {
+            TTrim(k.G, CommitText(d, "overview.commit"), k.Small, k.Pad + k.P(64), y - k.P(4), k.Width - 2 * k.Pad - k.P(64), k.P(20), CommitLow(d) ? RED : MUTED);
+            y += k.P(18);
+        }
         if (k.Zone != null) k.Zone.Add(new Zone(new Rectangle(0, ya, k.Width, y - ya), "open:ram"));
         y = Line(k, y);
         int y0 = y;

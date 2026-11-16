@@ -172,10 +172,10 @@ public static partial class Program {
 
     static readonly string[] WITH_VALUE = { "--inventory", "--screenshot", "--screenshot-report", "--screenshot-update", "--screenshot-settings", "--screenshot-menu", "--screenshot-confirm", "--screenshot-language", "--screenshot-pawnio", "--screenshot-welcome", "--screenshot-license", "--test-shortcut",
         "--data", "--holder", "--message", "--style", "--language", "--color", "--appearance", "--result", "--api", "--live", "--signature", "--height", "--view", "--flyout", "--tab", "--screen-height", "--scroll", "--background", "--scale", "--windows", "--user", "--sentence", "--show", "--programs" };
-    static readonly string[] WITHOUT_VALUE = { "--test-updates", "--test-notice", "--test-notifications", "--test-security", "--test-flyouts", "--test-themes", "--test-close", "--test-languages", "--test-license", "--test-etw", "--test-disks", "--test-migration", "--install", "--uninstall", "--preview",
+    static readonly string[] WITHOUT_VALUE = { "--test-updates", "--test-notice", "--test-notifications", "--test-security", "--test-flyouts", "--test-themes", "--test-close", "--test-languages", "--test-license", "--test-etw", "--test-disks", "--test-paint", "--test-migration", "--install", "--uninstall", "--preview",
         "--open", "--portable", "--test-capture", "--sample", "--close-button", "--details", "--without-pawnio", "--pawnio" };
     static readonly string[] COMMANDS = { "--inventory", "--screenshot", "--screenshot-report", "--screenshot-update", "--screenshot-settings", "--screenshot-menu", "--screenshot-confirm", "--screenshot-language", "--screenshot-pawnio", "--screenshot-welcome", "--screenshot-license", "--test-shortcut",
-        "--test-updates", "--test-notice", "--test-notifications", "--test-security", "--test-flyouts", "--test-themes", "--test-close", "--test-languages", "--test-license", "--test-etw", "--test-disks", "--test-migration", "--install", "--uninstall", "--preview" };
+        "--test-updates", "--test-notice", "--test-notifications", "--test-security", "--test-flyouts", "--test-themes", "--test-close", "--test-languages", "--test-license", "--test-etw", "--test-disks", "--test-paint", "--test-migration", "--install", "--uninstall", "--preview" };
     static readonly string[] STARTUP = { "--style", "--language", "--color", "--appearance", "--open", "--portable", "--test-capture" };
 
     static string WrongOption(string[] args) {
@@ -337,6 +337,7 @@ public static partial class Program {
             }
             if (args.Contains("--test-etw")) { WriteTest(Arg(args, "--result", null), "etw test", Network.RealTest()); return; }
             if (args.Contains("--test-disks")) { WriteTest(Arg(args, "--result", null), "disks test", Sensors.RealTest()); return; }
+            if (args.Contains("--test-paint")) { WriteTest(Arg(args, "--result", null), "paint test", SafePaint.Test()); return; }
             if (args.Contains("--test-migration")) { WriteTest(Arg(args, "--result", null), "migration test", Legacy.Test(Arg(args, "--data", null))); return; }
             if (Arg(args, "--screenshot-pawnio", null) != null) {
                 using (var b = new PawnIOChoice()) {

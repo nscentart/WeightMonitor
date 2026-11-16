@@ -6,6 +6,7 @@ using System.Linq;
 public class Sample {
     public double Cpu = -1, Gpu = -1, Ram = -1, Stall;
     public double CpuTemp = -1, GpuTemp = -1;
+    public double CommitFree = -1, CommitReserve = Drawing.COMMIT_RESERVE;
     public List<Entry> Entries = new List<Entry>();
     public Dictionary<string, string> DiskNames = new Dictionary<string, string>();
     public Entry NotResponding;
@@ -34,6 +35,7 @@ public class Sample {
         foreach (var r in gpu) c.Add("gpu", r.App, r.Sum[0]);
         if (snap.TotalRam > 0) foreach (var r in ram) c.Add("ram", r.App, r.Sum[0] / snap.TotalRam * 100.0);
         c.AddDisks(d);
+        c.CommitFree = d.CommitFree(); c.CommitReserve = Drawing.CommitReserve();
         foreach (var disk in d.Disks)
             foreach (var kv in disk.Space)
                 if (Disk.AlmostFull(kv.Value[0], kv.Value[1])) c.AlmostFullDisks[kv.Key] = kv.Value[0];

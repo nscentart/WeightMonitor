@@ -43,7 +43,7 @@ public partial class Flyout : Form {
         return true;
     }
 
-    public static string TypeOf(string zone) { return zone == "logo" ? "all" : zone; }
+    public static string TypeOf(string zone) { return zone == "logo" ? "all" : zone == "commit" ? "ram" : zone; }
 
     public static string Rule(string open, string clicked, string last, double msFromClosing) {
         if (open == clicked) return "close";
@@ -78,7 +78,7 @@ public partial class Flyout : Form {
         StartPosition = FormStartPosition.Manual; DoubleBuffered = true; BackColor = Drawing.BACKGROUND;
         Recalculate();
         clock.Interval = 1000;
-        clock.Tick += delegate { Recalculate(); Invalidate(); };
+        clock.Tick += delegate { SafePaint.Guard("flyout tick", Recalculate); Invalidate(); };
         clock.Start();
         guard.Interval = 60;
         guard.Tick += delegate {
@@ -137,8 +137,9 @@ public partial class Flyout : Form {
 
     protected override void OnPaint(PaintEventArgs e) {
         var z = new List<Zone>();
-        Draw(e.Graphics, type, ClientSize.Width, ClientSize.Height, content, scroll, s, Program.Current(), Program.Network, tab, z, list);
-        zones = z;
+        if (SafePaint.Run("flyout", e.Graphics, ClientRectangle, Drawing.BACKGROUND, Drawing.MUTED,
+            () => Draw(e.Graphics, type, ClientSize.Width, ClientSize.Height, content, scroll, s, Program.Current(), Program.Network, tab, z, list)))
+            zones = z;
     }
 
     protected override void OnMouseClick(MouseEventArgs e) {

@@ -70,17 +70,19 @@ public class Dashboard : Form {
             });
         };
         clock.Interval = 1000;
-        clock.Tick += delegate {
-            Drawing.LightBar = embedded && !free && Program.LightTheme();
-            if (Theme.FollowWindows()) Program.ChangedTheme();
-            if (embedded) Attach(); else Width = Reading(Height, 4000);
-            Invalidate();
-            UpdateTooltip();
-            if (Program.Icon != null)
-                Program.Icon.Text = Settings.Read("hidden", "no") == "yes"
-                    ? Reduced(Language.T("tip.off_taskbar", "settings", Language.T("menu.settings"))) : Reduced(Summary());
-        };
+        clock.Tick += delegate { SafePaint.Guard("bar tick", Tick); };
         clock.Start();
+    }
+
+    void Tick() {
+        Drawing.LightBar = embedded && !free && Program.LightTheme();
+        if (Theme.FollowWindows()) Program.ChangedTheme();
+        if (embedded) Attach(); else Width = Reading(Height, 4000);
+        Invalidate();
+        UpdateTooltip();
+        if (Program.Icon != null)
+            Program.Icon.Text = Settings.Read("hidden", "no") == "yes"
+                ? Reduced(Language.T("tip.off_taskbar", "settings", Language.T("menu.settings"))) : Reduced(Summary());
     }
 
     void Colors() {
@@ -91,7 +93,14 @@ public class Dashboard : Form {
 
     static string Reduced(string s) { return s.Length <= 63 ? s : s.Substring(0, 63); }
     static string Summary() {
-        var d = Program.Current();
+        SensorData d = null;
+        try { d = Program.Current(); } catch { }
+        return Summary(d);
+    }
+    public static string Summary(SensorData d) {
+        try { return Composed(d); } catch { return "WeightMonitor " + SafePaint.MISSING; }
+    }
+    static string Composed(SensorData d) {
         return "CPU " + Drawing.FormatPercent(d.Cpu.Usage) + " " + Drawing.FormatTemp(d.Cpu.Temp, false) + " · GPU " + Drawing.FormatPercent(d.Gpu.Usage) + " "
              + Drawing.FormatTemp(d.Gpu.Temp, false) + " · RAM " + Drawing.FormatPercent(d.Ram.Usage);
     }
@@ -314,8 +323,10 @@ public class Dashboard : Form {
 
     protected override void OnPaint(PaintEventArgs e) {
         var r = new Rectangle(0, 0, ClientSize.Width, ClientSize.Height);
-        if (free && Style == "a") e.Graphics.Clear(Theme.Bar.Backdrop);
-        zones = Drawing.Draw(e.Graphics, r, Program.Current(), Style, shape, 0);
+        SafePaint.Run("bar", e.Graphics, r, BackColor, Theme.Bar.Muted, () => {
+            if (free && Style == "a") e.Graphics.Clear(Theme.Bar.Backdrop);
+            zones = Drawing.Draw(e.Graphics, r, Program.Current(), Style, shape, 0);
+        });
         if (!zonesLogged && Environment.GetEnvironmentVariable("WM_TRACE") == "1") {
             zonesLogged = true;
             Program.Log("bar " + Bounds + " shape " + shape + " zones " + string.Join(" ", zones.Select(z => z.Name + "=" + RectangleToScreen(z.R))));

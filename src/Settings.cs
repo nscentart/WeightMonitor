@@ -21,7 +21,7 @@ public static class Settings {
     static Dictionary<string, string> values;
 
     static readonly HashSet<string> KNOWN = new HashSet<string> { "view", "detached", "style", "hidden", "updates", "skipped", "portable", "welcome",
-        "weather_reserve", "position_x", "position_y", "notifications", "tab_cpu", "tab_gpu", "tab_ram", "tab_disks", "tab_network", "tab_all", "bar_show", "language", "theme", "color", "appearance" };
+        "weather_reserve", "position_x", "position_y", "notifications", "tab_cpu", "tab_gpu", "tab_ram", "tab_disks", "tab_network", "tab_all", "bar_show", "bar_commit", "commit_reserve", "language", "theme", "color", "appearance" };
     const int MAX_VALUE = 64;
 
     public static void UseFile(string file, string old = null, string legacy = null, string legacyOld = null) {

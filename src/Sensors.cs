@@ -299,6 +299,8 @@ public partial class Sensors {
         float tRam = -1f;
         foreach (var m in modules) foreach (var s in All(m)) if (TempReal(s)) tRam = Math.Max(tRam, s.Value.Value);
         d.Ram.Temp = tRam;
+        double cu, ct;
+        if (Details.Commit(out cu, out ct)) { d.CommitUsed = (float)(cu / 1073741824.0); d.CommitTotal = (float)(ct / 1073741824.0); }
 
         foreach (var disk in disks) {
             PerformanceCounter c;

@@ -64,6 +64,7 @@ public static partial class Drawing {
                 foreach (string style in new[] { "a", "b" }) {
                     Func<string, List<string>> Zone = choice => {
                         Settings.Write("bar_show", choice);
+                        Settings.Write("bar_commit", "no");
                         Settings.Reread();
                         return Draw(g, new Rectangle(0, 0, 1600, 48), d, style, "extended", 0).Select(z => z.Name).ToList();
                     };
@@ -76,6 +77,12 @@ public static partial class Drawing {
                     Check(Zone("network").SequenceEqual(new[] { "logo", "network" }), "style " + style + ": only the network");
                     Check(Zone("logo").SequenceEqual(new[] { "logo" }), "style " + style + ": nothing chosen, the logo stays");
                     Check(Zone("cpu,gpu,ram,disks").Contains("disks"), "style " + style + ": the written order does not matter");
+                    Settings.Write("bar_show", BAR_ALL); Settings.Write("bar_commit", "yes"); Settings.Reread();
+                    var z3 = Draw(g, new Rectangle(0, 0, 1600, 48), d, style, "extended", 0).Select(x => x.Name).ToList();
+                    Check(z3.SequenceEqual(new[] { "logo", "disks", "network", "cpu", "gpu", "ram", "commit" }) && lastWidth > all, "style " + style + ": committed memory chosen, after the memory and wider (" + lastWidth + " out of " + all + ")");
+                    Check(Width(g, 48, style, "extended", d.Letters().Count) == lastWidth, "style " + style + ": the measure equals the drawing with committed memory");
+                    Settings.Write("bar_show", "logo"); Settings.Reread();
+                    Check(Draw(g, new Rectangle(0, 0, 1600, 48), d, style, "extended", 0).Select(x => x.Name).SequenceEqual(new[] { "logo", "commit" }), "style " + style + ": only committed memory, next to the logo");
                 }
             }
             Settings.Write("bar_show", "gpu");

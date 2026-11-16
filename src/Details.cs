@@ -19,6 +19,14 @@ public class Details {
         public uint Length, Load; public ulong Physical, FreePhysical, Commitment, FreeCommitment, Virtual, FreeVirtual, Extended;
     }
 
+    public static bool Commit(out double used, out double total) {
+        used = -1; total = -1;
+        var m = new MEMORY(); m.Length = (uint)Marshal.SizeOf(typeof(MEMORY));
+        if (!GlobalMemoryStatusEx(ref m) || m.Commitment == 0 || m.FreeCommitment > m.Commitment) return false;
+        total = m.Commitment; used = m.Commitment - m.FreeCommitment;
+        return true;
+    }
+
     public static Details Instance;
     public const int DISKS = 16;
 
