@@ -403,7 +403,7 @@ public static partial class Program {
                 Sensors.Read();
                 Network = new Network();
                 Network.Start();
-                if (!Network.Activate) Log("per-program network is off: " + Network.Error);
+                if (!Network.Activate) Log("per-program network is off: " + Network.LogError);
                 Notification.Start();
                 var work = new Thread(Work) { IsBackground = true, Name = "sensors" };
                 work.Start();

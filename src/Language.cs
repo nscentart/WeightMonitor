@@ -85,6 +85,8 @@ public static partial class Language {
 
     public static string Fixed(string key, params object[] pairs) { return Fill(Raw(INITIAL, key) ?? key, pairs); }
 
+    public static string English(string key, params object[] pairs) { return Fill(Raw(FALLBACK, key) ?? key, pairs); }
+
     public static string Number(long n) { return n.ToString("N0", culture); }
 
     public static string Fill(string text, object[] pairs) {

@@ -75,8 +75,8 @@ public static partial class UpdateChecker {
         } catch (WebException ex) {
             var h = ex.Response as HttpWebResponse;
             if (h != null && h.StatusCode == HttpStatusCode.NotFound)
-                throw new Exception(Language.T("update.not_public"));
-            throw new Exception(Language.T("update.github_silent", "message", ex.Message));
+                throw new UpdateFailure(Language.T("update.not_public"), Language.English("update.not_public"));
+            throw new UpdateFailure(Language.T("update.github_silent", "message", ex.Message), Language.English("update.github_silent", "message", ex.Status.ToString()));
         }
         return FromResponse(json, My());
     }
@@ -110,7 +110,8 @@ public static partial class UpdateChecker {
                 var n = Find();
                 if (n == null || Settings.Read("skipped", "") == n.Label) return;
                 ui.BeginInvoke((MethodInvoker)delegate { Notify(n); });
-            } catch (Exception ex) { Program.Log("updates: " + ex.Message); }
+            } catch (UpdateFailure ex) { Program.Log("updates: " + ex.LogText);
+            } catch (Exception ex) { Program.Log("updates: " + ex.GetType().Name); }
         });
         t.IsBackground = true; t.Start();
     }

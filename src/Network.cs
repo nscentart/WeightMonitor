@@ -35,6 +35,7 @@ public partial class Network {
     ulong session, trace = ulong.MaxValue;
     public volatile bool Activate;
     public string Error = "";
+    public string LogError = "";
 
     readonly object tallies = new object();
     Dictionary<int, long[]> totals = new Dictionary<int, long[]>();
@@ -81,10 +82,10 @@ public partial class Network {
                 ControlTrace(0, sessionName, properties, 1);
                 Prepare();
                 uint r = StartTrace(out session, sessionName, properties);
-                if (r != 0) { session = 0; Error = r == 5 ? Language.T("network.reason_admin") : "StartTrace " + r; return false; }
+                if (r != 0) { session = 0; Error = r == 5 ? Language.T("network.reason_admin") : "StartTrace " + r; LogError = r == 5 ? Language.English("network.reason_admin") : "StartTrace " + r; return false; }
                 Guid g = KERNEL_NETWORK;
                 r = EnableTraceEx2(session, ref g, 1, 5, ulong.MaxValue, 0, 0, IntPtr.Zero);
-                if (r != 0) { Error = "EnableTraceEx2 " + r; TurnOff(); return false; }
+                if (r != 0) { Error = LogError = "EnableTraceEx2 " + r; TurnOff(); return false; }
                 Guid disks = KERNEL_DISK;
                 uint rd = EnableTraceEx2(session, ref disks, 1, 5, ulong.MaxValue, 0, 0, IntPtr.Zero);
                 if (rd != 0) Program.Log("per-program disks off: EnableTraceEx2 " + rd);
@@ -97,22 +98,23 @@ public partial class Network {
                 Marshal.WriteInt32(logfile, 28, 0x100 | 0x10000000);
                 Marshal.WriteIntPtr(logfile, 424, Marshal.GetFunctionPointerForDelegate(callback));
                 trace = OpenTrace(logfile);
-                if (trace == ulong.MaxValue) { Error = "OpenTrace " + Marshal.GetLastWin32Error(); TurnOff(); return false; }
-                Error = "";
+                if (trace == ulong.MaxValue) { Error = LogError = "OpenTrace " + Marshal.GetLastWin32Error(); TurnOff(); return false; }
+                Error = LogError = "";
                 Activate = true;
                 Details.EtwDisks = rd == 0;
                 return true;
-            } catch (Exception ex) { Error = ex.Message; return false; }
+            } catch (Exception ex) { Error = LogError = ex.Message; return false; }
         }
     }
 
     double Listen() {
         var t0 = DateTime.UtcNow;
-        try { ProcessTrace(new[] { trace }, 1, IntPtr.Zero, IntPtr.Zero); } catch (Exception ex) { Error = ex.Message; }
+        try { ProcessTrace(new[] { trace }, 1, IntPtr.Zero, IntPtr.Zero); } catch (Exception ex) { Error = LogError = ex.Message; }
         double duration = (DateTime.UtcNow - t0).TotalSeconds;
         lock (startup) TurnOff();
         if (!enough.WaitOne(0)) {
             Error = Language.T("network.stopped");
+            LogError = Language.English("network.stopped");
             Program.Log("network and per-program disks: reading interrupted after " + (int)duration + " seconds, restarting by itself");
         }
         return duration;

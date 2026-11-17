@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+- **Log:** every line of `data\WeightMonitor.log` is now written in English whatever the program language; the texts shown to the user keep their translations.
+- **Pictures:** the pictures in `docs` are regenerated and show the committed memory reading.
+
 ## 1.2 (17/11/2026)
 Code base rewritten in English and cleaned up, a fix for the bar and a new memory reading.
 - **Bar:** the bar never shows the red X again. If a drawing fails, that part shows "n/d" for a moment and the program tries again at the next refresh.
