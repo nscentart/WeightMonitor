@@ -14,7 +14,7 @@ using System.Threading;
 using System.Windows.Forms;
 
 public static partial class Program {
-    public const string VERSION = "1.2";
+    public const string VERSION = "1.3";
     public static Sensors Sensors;
     public static Network Network;
     public static Dashboard Bar;

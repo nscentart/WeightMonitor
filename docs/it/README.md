@@ -31,6 +31,7 @@ Il programma all'avvio controlla se c'è una versione nuova e te lo dice; oppure
   - CPU: uso di ogni thread, frequenze, temperature e i programmi che la usano di più.
   - GPU: uso di ogni motore, memoria video, temperature e i programmi che la usano di più.
   - RAM: in uso, in cache e libera, e i programmi che ne tengono di più.
+  - Memoria virtuale (VM): quanta memoria i programmi hanno prenotato (impegnata) rispetto al limite, che è la RAM più il file di paging, e quanta ne resta prima del limite. Mostra anche la parte nel file di paging, il picco, un grafico e i programmi che ne prenotano di più, ognuno col suo pulsante Chiudi. Quando ne resta poca lo dice in rosso, con cosa fare. Si apre anche dalla riga «Impegnata» del riquadro della RAM e dalla sua notifica.
   - Dischi: nome, tipo, temperatura e spazio libero di ognuno, letture e scritture, i programmi che leggono e scrivono.
   - Rete: grafico e **quale programma usa la connessione**. Velocità a colori (verde, giallo, arancione, rosso). La
     tendina ha sempre la stessa altezza in tutte e tre le schede: con tanti programmi l'elenco scorre, con la rotella o con
@@ -69,6 +70,10 @@ Il programma all'avvio controlla se c'è una versione nuova e te lo dice; oppure
 | Dischi | Rete | Tutto |
 |---|---|---|
 | ![](flyout-disks.png) | ![](flyout-network.png) | ![](flyout-overview.png) |
+
+| Memoria virtuale (impegnata) |
+|---|
+| ![](flyout-commit.png) |
 
 ## Installare
 1. Scarica `WeightMonitor.exe` col link qui sopra, in una cartella nuova e vuota: Windows, quando un programma parte da
@@ -168,7 +173,7 @@ Un'opzione che non esiste, o che manca del suo valore, non fa partire niente: il
 `--result file`, scrive lì il motivo.
 
 Prove senza installare: `WeightMonitor.exe --screenshot test.png --sample [--view extended|collected|compact]
-[--flyout cpu|gpu|ram|disks|network|all] [--tab 0|1|2]`, `--screenshot-settings test.png [--scale 1.5]`, `--screenshot-menu test.png`, `--screenshot-welcome test.png [--without-pawnio]`, `--screenshot-pawnio test.png`,
+[--flyout cpu|gpu|ram|commit|disks|network|all] [--tab 0|1|2]`, `--screenshot-settings test.png [--scale 1.5]`, `--screenshot-menu test.png`, `--screenshot-welcome test.png [--without-pawnio]`, `--screenshot-pawnio test.png`,
 `--screenshot-update test.png`, con `--flyout` anche `--screen-height 400 --scroll 200` (la tendina più alta dello schermo) e `--programs 40` (quanti programmi nella tendina Rete),
 `--language it|en|fr|es|de --color blue|green|lemon|pink|purple --appearance auto|dark|light` (con ogni foto: valgono solo per quella volta e non si scrivono), `--close-button` (nelle foto d'esempio il tasto Chiudi sui programmi d'esempio), `--test-themes [--result file]` (ogni tema completo e leggibile, ricordato, un valore senza senso non rompe niente),
 `--test-notifications [--result file]` (dati finti: scrive quali notifiche partirebbero e il testo, senza mostrarle), `--test-flyouts [--result file]` (dove si aprono le tendine e come scorrono), `--test-disks [--result file]` (un cambio finto sui contatori veri dei dischi), `--test-etw [--result file]` (la lettura per programma, interrotta davvero su una sessione a parte: vuole i permessi di amministratore), `--test-close [--result file]` (il tasto Chiudi su un finto elenco di programmi: chi resta escluso e il numero di processo riusato. Non chiude niente), `--test-languages [--result file]` (i testi delle cinque lingue), `--test-license [--result file]` (la licenza con una chiave di prova creata in memoria, e le scritte nelle cinque lingue), `--screenshot-license test.png [--holder nome] [--message other|revoked|invalid|unreadable|active|removed]` (la finestra della licenza; con ogni foto `--holder` mostra una licenza commerciale d'esempio, e il file vero della licenza non si vede mai), `--screenshot-confirm test.png [--windows 3] [--details]`, con `--flyout` anche `--close-button`, con `--screenshot` anche `--background light`, `--sentence yes`, `--show cpu,ram`, `--test-security [--result file] [--signature file]` (trasloco delle impostazioni, indirizzi, controllo degli aggiornamenti, scelta di PawnIO, ripartenza della lettura, pulizia del rapporto, opzioni della riga di comando), `--test-migration --data cartella [--result file]` (le impostazioni, la licenza e i log scritti dalle versioni 1.0 e 1.1, letti dai file d'esempio in `tests/legacy-data`), `--test-capture` (a cattura aperta scrive nel log chi sta sui punti della barra, se il suggerimento si vede e che cursore c'è), oppure `--preview` (a galla sopra la barra).

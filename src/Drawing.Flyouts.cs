@@ -300,7 +300,7 @@ public static partial class Drawing {
             }
             y += hb + k.P(8);
             var entries = new[] {
-                new[] { Language.T("ram.in_use"), Giga(o.UsedRam) }, new[] { Language.T("ram.committed"), Language.T("ram.pair_of_total", "used", Giga(o.Committed), "total", Giga(o.Limit)) },
+                new[] { Language.T("ram.in_use"), Giga(o.UsedRam) }, new[] { Language.T("ram.committed") + " ›", Language.T("ram.pair_of_total", "used", Giga(o.Committed), "total", Giga(o.Limit)) },
                 new[] { Language.T("ram.cached"), Giga(o.Cache) }, new[] { Language.T("ram.modified"), Giga(o.Modified) },
                 new[] { Language.T("ram.free"), Giga(o.PlaceDetached) }, new[] { Language.T("ram.compressed"), o.Compressed > 0 ? Giga(o.Compressed) : "--" },
                 new[] { Language.T("ram.paged_pool"), Giga(o.Paging) }, new[] { Language.T("ram.nonpaged_pool"), Giga(o.NonPaging) } };
@@ -312,6 +312,7 @@ public static partial class Drawing {
                 if (marks[i] != Color.Empty) DiskFull(k.G, new Rectangle(xv, yv + (hv - q) / 2, q, q), k.P(2), marks[i]);
                 TTrim(k.G, entries[i][0], k.Small, xv + k.P(14), yv, column - k.P(14) - W(k.G, entries[i][1], k.Bold) - k.P(6), hv, MUTED);
                 TRight(k.G, entries[i][1], k.Bold, xv + column, yv, hv, i == 1 && lowCommit ? RED : TEXT);
+                if (i == 1 && k.Zone != null) k.Zone.Add(new Zone(new Rectangle(xv, yv, column, hv), "open:commit"));
             }
             y += (entries.Length + 1) / 2 * hv;
         }
@@ -328,6 +329,91 @@ public static partial class Drawing {
             y = AppRow(k, y, hr, r.App, r.Current[0] > 0, colMem - k.P(80), new[] { Giga(v) }, new[] { MemoryColor(v) }, new[] { colMem });
         }
         return Other(k, y, rows.Count) + k.Pad;
+    }
+
+    const int TOP_COMMIT = 5;
+    static string GigaOrNone(double b) { return b < 0 ? "--" : Giga(b); }
+
+    static int CommitFlyout(Kit k, SensorData d, Details x, int tab) {
+        var o = x.Current;
+        double free = o.Limit > 0 ? Math.Max(0, o.Limit - o.Committed) : -1;
+        bool low = free >= 0 && free / 1073741824.0 < CommitReserve();
+        double percent = o.Limit > 0 ? Math.Min(100, o.Committed / o.Limit * 100.0) : -1;
+        int y = k.Pad, h = k.P(26);
+        T(k.G, Language.T("commit.title"), k.Title, k.Pad, y, h, TEXT);
+        TRight(k.G, FormatPercent(percent), k.Title, k.Width - k.Pad, y, h, low ? RED : PercentColor(percent));
+        y += h + k.P(2);
+        if (o.Limit > 0) {
+            TTrim(k.G, Language.T("commit.used_of_limit", "used", Giga(o.Committed), "limit", Giga(o.Limit), "free", Giga(free)), k.Small, k.Pad, y, k.Width - 2 * k.Pad, k.P(18), low ? RED : MUTED);
+            y += k.P(18);
+        }
+        y += TTwoRows(k.G, Language.T("commit.explain"), k.Small, k.Pad, y, k.Width - 2 * k.Pad, k.P(18), MUTED) + k.P(10);
+        y = Tabs(k, y, tab);
+
+        var series = SeriesOf(x.Virtual, tab);
+        var average = x.Virtual.Average(tab == 0 ? 1 : tab);
+        double peak = series.Count == 0 ? 0 : series.Max(v => v[0]);
+        Chart(k, new Rectangle(k.Pad, y, k.Width - 2 * k.Pad, k.P(64)), series, new[] { 0 }, new[] { low ? RED : LABEL }, 100,
+                Language.T("temps.average_peak", "average", FormatPercent(average[0]), "peak", FormatPercent(peak)));
+        y += k.P(64) + k.P(14);
+
+        double inFile = Math.Max(0, o.PageFileUsed), inRam = Math.Max(0, o.Committed - inFile);
+        if (o.Limit > 0) {
+            int wb = k.Width - 2 * k.Pad, hb = k.P(14), xb = k.Pad;
+            var old = k.G.Clip;
+            using (var p = Round(new Rectangle(k.Pad, y, wb, hb), k.P(4))) {
+                k.G.SetClip(p);
+                using (var b = new SolidBrush(EMPTY)) k.G.FillRectangle(b, k.Pad, y, wb, hb);
+                foreach (var pz in new[] { new KeyValuePair<double, Color>(inRam, ACCENT), new KeyValuePair<double, Color>(inFile, ORANGE) }) {
+                    int w = (int)Math.Round(wb * Math.Min(1, pz.Key / o.Limit));
+                    using (var b = new SolidBrush(pz.Value)) k.G.FillRectangle(b, xb, y, w, hb);
+                    xb += w;
+                }
+                k.G.Clip = old;
+            }
+            double reserve = CommitReserve() * 1073741824.0;
+            if (reserve > 0 && reserve < o.Limit) {
+                int xr = k.Pad + (int)Math.Round(wb * (o.Limit - reserve) / o.Limit);
+                using (var p = new Pen(RED, Math.Max(1f, 2f * k.S))) k.G.DrawLine(p, xr, y - k.P(3), xr, y + hb + k.P(3));
+            }
+            y += hb + k.P(8);
+        }
+        bool known = o.Limit > 0;
+        var entries = new[] {
+            new[] { Language.T("commit.used"), GigaOrNone(known ? o.Committed : -1) }, new[] { Language.T("commit.limit"), GigaOrNone(known ? o.Limit : -1) },
+            new[] { Language.T("commit.in_ram"), GigaOrNone(known ? inRam : -1) }, new[] { Language.T("commit.free"), GigaOrNone(free) },
+            new[] { Language.T("commit.in_paging_file"), GigaOrNone(o.PageFileUsed) }, new[] { Language.T("commit.paging_file_size"), GigaOrNone(o.PageFileSize) },
+            new[] { Language.T("commit.peak"), GigaOrNone(o.CommitPeak) }, new[] { Language.T("commit.physical"), GigaOrNone(o.TotalRam > 0 ? o.TotalRam : -1) } };
+        var marks = new Color[] { Color.Empty, Color.Empty, ACCENT, EMPTY, ORANGE, Color.Empty, Color.Empty, Color.Empty };
+        int column = (k.Width - 2 * k.Pad - k.P(20)) / 2, hv = k.P(21);
+        for (int i = 0; i < entries.Length; i++) {
+            int xv = k.Pad + (i % 2) * (column + k.P(20)), yv = y + (i / 2) * hv, q = k.P(8);
+            if (marks[i] != Color.Empty) DiskFull(k.G, new Rectangle(xv, yv + (hv - q) / 2, q, q), k.P(2), marks[i]);
+            TTrim(k.G, entries[i][0], k.Small, xv + k.P(14), yv, column - k.P(14) - W(k.G, entries[i][1], k.Bold) - k.P(6), hv, MUTED);
+            TRight(k.G, entries[i][1], k.Bold, xv + column, yv, hv, i == 3 && low ? RED : TEXT);
+        }
+        y += (entries.Length + 1) / 2 * hv + k.P(6);
+        if (free >= 0) {
+            string advice = Language.T(low ? "commit.low" : "commit.ok", "free", Giga(free));
+            y += TTwoRows(k.G, advice, low ? k.Bold : k.Small, k.Pad, y, k.Width - 2 * k.Pad, k.P(18), low ? RED : GOOD);
+        }
+        y = Line(k, y + k.P(8)) + k.P(8);
+
+        int colMem = k.Width - k.Pad;
+        y = AppTitles(k, y, new[] { Language.T(tab == 0 ? "commit.col_now" : "commit.col_average") }, new[] { colMem });
+        int amount;
+        var rows = x.Virtual.Rows(tab, 0, out amount);
+        if (rows.Count == 0) y = None(k, y, Language.T("commit.none"));
+        int hr = k.P(28);
+        foreach (var r in rows.Take(TOP_COMMIT)) {
+            double v = r.Sum[0] / amount;
+            y = AppRow(k, y, hr, r.App, r.Current[0] > 0, colMem - k.P(80), new[] { Giga(v) }, new[] { MemoryColor(v) }, new[] { colMem });
+        }
+        if (rows.Count > TOP_COMMIT) {
+            T(k.G, Language.T("common.other_programs", "count", rows.Count - TOP_COMMIT), k.Small, k.Pad, y, k.P(20), MUTED);
+            y += k.P(20);
+        }
+        return y + k.Pad;
     }
 
     static int DiskDetailFlyout(Kit k, SensorData d, Details x, int tab) {

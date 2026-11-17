@@ -44,7 +44,7 @@ public static class EmptyDesktop {
 "@
 $program = (Resolve-Path $Exe).Path
 $languages = "en", "it", "fr", "es", "de"
-$flyouts = [ordered]@{ "flyout-overview" = "all"; "flyout-cpu" = "cpu"; "flyout-gpu" = "gpu"; "flyout-ram" = "ram"; "flyout-disks" = "disks"; "flyout-network" = "network" }
+$flyouts = [ordered]@{ "flyout-overview" = "all"; "flyout-cpu" = "cpu"; "flyout-gpu" = "gpu"; "flyout-ram" = "ram"; "flyout-commit" = "commit"; "flyout-disks" = "disks"; "flyout-network" = "network" }
 function Photo([string]$File, [string[]]$Arguments) {
     if (Test-Path $File) { Remove-Item $File -Force }
     $quoted = ($Arguments | ForEach-Object { '"' + $_ + '"' }) -join ' '

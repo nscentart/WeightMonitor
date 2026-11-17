@@ -430,6 +430,7 @@ public static partial class Drawing {
             if (type == "cpu") return CpuFlyout(k, d, x, tab);
             if (type == "gpu") return GpuFlyout(k, d, x, tab);
             if (type == "ram") return RamFlyout(k, d, x, tab);
+            if (type == "commit") return CommitFlyout(k, d, x, tab);
             return OverviewFlyout(k, d, network);
         }
     }
@@ -621,6 +622,21 @@ public static partial class Drawing {
         return y + h;
     }
 
+    static int VirtualRow(Kit k, int y, SensorData d) {
+        int h = k.P(44), right = k.Width - k.Pad, wTemp = k.P(44), wUsage = k.P(58);
+        bool low = CommitLow(d);
+        T(k.G, COMMIT, k.Title, k.Pad, y, h, LABEL);
+        int xm = k.Pad + k.P(64), wm = right - wTemp - wUsage - k.P(12) - xm;
+        TTrim(k.G, Language.T("commit.title"), k.Text, xm, y + k.P(4), wm, h / 2 - k.P(2), TEXT);
+        TTrim(k.G, CommitText(d, "overview.commit"), k.Small, xm, y + h / 2, wm, h / 2 - k.P(4), low ? RED : MUTED);
+        int xu = right - wTemp - wUsage;
+        float usage = d.CommitPercent();
+        T(k.G, FormatPercent(usage), k.Bold, xu, y - k.P(3), h, low ? RED : TEXT);
+        AccentBar(k, xu, y + h / 2 + k.P(9), wUsage - k.P(14), usage);
+        TRight(k.G, FreeGb(d.CommitFree(), true), k.Bold, right, y, h, CommitColor(d));
+        return y + h;
+    }
+
     static int SentenceOnTop(Kit k, int y) {
         var f = Notification.Current ?? new Sentence { Text = Language.T("status.waiting") };
         int ya = y, h = k.P(24), side = k.P(8), xt = k.Pad + side + k.P(8);
@@ -656,11 +672,12 @@ public static partial class Drawing {
         y = Line(k, y); ya = y;
         string ram = d.TotalRam > 0 ? Language.T("overview.ram_in_use", "used", d.UsedRam.ToString("0.0", CultureInfo.InvariantCulture), "total", Math.Round(d.TotalRam).ToString("0")) : Language.T("overview.in_use");
         y = CoreRow(k, y, "RAM", ram, Language.T(d.Ram.Temp < 0 ? "common.no_module_temperature" : "overview.hottest_module"), d.Ram.Usage, d.Ram.Temp);
-        if (d.CommitFree() >= 0) {
-            TTrim(k.G, CommitText(d, "overview.commit"), k.Small, k.Pad + k.P(64), y - k.P(4), k.Width - 2 * k.Pad - k.P(64), k.P(20), CommitLow(d) ? RED : MUTED);
-            y += k.P(18);
-        }
         if (k.Zone != null) k.Zone.Add(new Zone(new Rectangle(0, ya, k.Width, y - ya), "open:ram"));
+        if (d.CommitFree() >= 0) {
+            y = Line(k, y); ya = y;
+            y = VirtualRow(k, y, d);
+            if (k.Zone != null) k.Zone.Add(new Zone(new Rectangle(0, ya, k.Width, y - ya), "open:commit"));
+        }
         y = Line(k, y);
         int y0 = y;
         y += k.P(6);

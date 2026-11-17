@@ -31,6 +31,7 @@ Beim Start prüft das Programm, ob es eine neue Version gibt, und teilt es Ihnen
   - CPU: Auslastung jedes Threads, Frequenzen, Temperaturen und die Programme, die sie am stärksten nutzen.
   - GPU: Auslastung jeder Engine, Videospeicher, Temperaturen und die Programme, die sie am stärksten nutzen.
   - RAM: verwendet, zwischengespeichert und frei, dazu die Programme, die am meisten davon belegen.
+  - Virtueller Speicher (VM): wie viel Speicher die Programme reserviert haben (zugesichert), gemessen am Limit aus RAM plus Auslagerungsdatei, und wie viel bis zum Limit bleibt. Dazu der Teil in der Auslagerungsdatei, die Spitze, ein Diagramm und die Programme, die am meisten reservieren, jedes mit seiner Schaltfläche Schließen. Wenn wenig bleibt, steht es in Rot da, mit dem, was zu tun ist. Es öffnet sich auch über die Zeile „Zugesichert“ im RAM-Fenster und über seine Benachrichtigung.
   - Laufwerke: Name, Typ, Temperatur und freier Speicherplatz jedes Laufwerks, Lese- und Schreibvorgänge, die Programme, die lesen und schreiben.
   - Netzwerk: ein Diagramm und **welches Programm die Verbindung nutzt**. Die Geschwindigkeit ist farbig markiert (grün, gelb, orange, rot). Das
     Flyout ist auf allen drei Registerkarten immer gleich hoch: Bei vielen Programmen lässt sich die Liste scrollen, mit dem Mausrad oder mit
@@ -70,6 +71,10 @@ Beim Start prüft das Programm, ob es eine neue Version gibt, und teilt es Ihnen
 | Laufwerke | Netzwerk | Alles |
 |---|---|---|
 | ![](flyout-disks.png) | ![](flyout-network.png) | ![](flyout-overview.png) |
+
+| Virtueller Speicher (zugesichert) |
+|---|
+| ![](flyout-commit.png) |
 
 ## Installation
 1. Laden Sie `WeightMonitor.exe` über den Link oben in einen neuen, leeren Ordner herunter: Wenn ein Programm als Administrator startet, kann Windows
@@ -169,7 +174,7 @@ Eine Option, die es nicht gibt oder der ihr Wert fehlt, startet nichts: Das Prog
 `--result file` angegeben ist, den Grund dorthin.
 
 Tests ohne Installation: `WeightMonitor.exe --screenshot test.png --sample [--view extended|collected|compact]
-[--flyout cpu|gpu|ram|disks|network|all] [--tab 0|1|2]`, `--screenshot-settings test.png [--scale 1.5]`, `--screenshot-menu test.png`, `--screenshot-welcome test.png [--without-pawnio]`, `--screenshot-pawnio test.png`,
+[--flyout cpu|gpu|ram|commit|disks|network|all] [--tab 0|1|2]`, `--screenshot-settings test.png [--scale 1.5]`, `--screenshot-menu test.png`, `--screenshot-welcome test.png [--without-pawnio]`, `--screenshot-pawnio test.png`,
 `--screenshot-update test.png`, mit `--flyout` auch `--screen-height 400 --scroll 200` (ein Flyout, das höher als der Bildschirm ist) und `--programs 40` (wie viele Programme im Flyout „Netzwerk“ stehen),
 `--language it|en|fr|es|de --color blue|green|lemon|pink|purple --appearance auto|dark|light` (bei jedem Bild: gelten nur dieses eine Mal und werden nicht gespeichert), `--close-button` (in Beispielbildern die Schaltfläche „Schließen“ bei den Beispielprogrammen), `--test-themes [--result file]` (jedes Design vollständig und lesbar, gemerkt, ein unsinniger Wert macht nichts kaputt),
 `--test-notifications [--result file]` (Testdaten: schreibt, welche Benachrichtigungen ausgelöst würden und mit welchem Text, ohne sie anzuzeigen), `--test-flyouts [--result file]` (wo sich Flyouts öffnen und wie sie scrollen), `--test-disks [--result file]` (eine simulierte Änderung an den echten Laufwerkszählern), `--test-etw [--result file]` (das Lesen pro Programm, tatsächlich unterbrochen in einer separaten Sitzung: erfordert Administratorrechte), `--test-close [--result file]` (die Schaltfläche „Schließen“ an einer simulierten Programmliste: wer ausgeschlossen bleibt und die wiederverwendete Prozessnummer. Es wird nichts geschlossen), `--test-languages [--result file]` (die Texte der fünf Sprachen), `--test-license [--result file]` (die Lizenz mit einem im Speicher erzeugten Testschlüssel und die Hinweise in den fünf Sprachen), `--screenshot-license test.png [--holder Name] [--message other|revoked|invalid|unreadable|active|removed]` (das Lizenzfenster; bei jedem Foto zeigt `--holder` eine kommerzielle Beispiellizenz, die echte Lizenzdatei ist nie zu sehen), `--screenshot-confirm test.png [--windows 3] [--details]`, mit `--flyout` auch `--close-button`, mit `--screenshot` auch `--background light`, `--sentence yes`, `--show cpu,ram`, `--test-security [--result file] [--signature file]` (Umzug der Einstellungen, Adressen, Update-Prüfung, PawnIO-Auswahl, Neustart des Lesens, Bereinigung des Berichts, Befehlszeilenoptionen), `--test-migration --data Ordner [--result file]` (die von den Versionen 1.0 und 1.1 geschriebenen Einstellungen, Lizenz und Protokolle, gelesen aus den Beispieldateien in `tests/legacy-data`), `--test-capture` (bei offener Bildschirmaufnahme protokolliert es, was an den Punkten

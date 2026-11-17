@@ -1,8 +1,12 @@
 # Changelog
 
-## Unreleased
+## 1.3 (17/11/2026)
+A flyout for the virtual memory, a cleaner log and new pictures. Everything else works as in 1.2.
+- **Virtual memory flyout:** a new flyout for the committed memory, opened from the VM part of the bar, from the VM row of the overview, from the Committed row of the RAM flyout and from the low committed memory notification. It shows how much is committed, the limit and how much is left before it (red under 10 GB), how much sits in RAM and how much in the paging file, the paging file size, the peak since startup, a graph over the last second, minute and hour, the five programs that commit the most with a Close button, and a line of advice.
+- **Overview:** the virtual memory has its own row, with the percentage and the space left before the limit.
+- **Texts:** "Committed" in the RAM flyout is now "Engagée" in French and "Comprometida" in Spanish.
 - **Log:** every line of `data\WeightMonitor.log` is now written in English whatever the program language; the texts shown to the user keep their translations.
-- **Pictures:** the pictures in `docs` are regenerated and show the committed memory reading.
+- **Pictures:** the pictures in `docs` are regenerated and a new one shows the virtual memory flyout.
 
 ## 1.2 (17/11/2026)
 Code base rewritten in English and cleaned up, a fix for the bar and a new memory reading.

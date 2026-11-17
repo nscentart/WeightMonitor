@@ -35,6 +35,17 @@ public partial class Flyout {
         Check(Rule(null, "cpu", "cpu", 100) == "none" && Rule(null, "cpu", "cpu", 500) == "open", "the click that has just closed it does not reopen it, the next one does");
         Check(Rule(null, "gpu", "cpu", 100) == "open", "cpu just closed, click on gpu: it opens at once");
         Check(TypeOf("logo") == "all" && TypeOf("disks") == "disks", "the logo opens the overview");
+        Check(TypeOf("commit") == "commit", "the committed memory piece opens its own flyout");
+        var sample = Program.TestSample();
+        var net = new Network(); net.SampleData();
+        foreach (string type in new[] { "all", "ram", "commit" }) {
+            var zones = new List<Zone>();
+            int h;
+            using (var b = new Bitmap(Drawing.FlyoutWidth(type, 1f), 4000)) using (var g = Graphics.FromImage(b)) h = Drawing.Flyout(g, type, b.Width, 1f, sample, net, 1, zones);
+            bool link = zones.Any(z => z.Name == "open:commit");
+            if (type == "commit") Check(h > 300 && !link && zones.Any(z => z.Name.StartsWith("tab:")), "the committed memory flyout draws with its tabs (" + h + " px)");
+            else Check(link, "the " + type + " flyout has the link to the committed memory flyout");
+        }
 
         Check(!ClosesOnMouse(true, false, false, true), "left on the bar: the flyout waits for the click");
         Check(ClosesOnMouse(true, false, false, false), "left outside: it closes");

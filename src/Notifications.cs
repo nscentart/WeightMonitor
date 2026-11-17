@@ -143,7 +143,7 @@ public class Notifications {
     }
 
     static Notice CommitLow(Sample c) {
-        return new Notice { Level = 1, Cause = "commit", Title = Language.T("notification.title.might"), Flyout = "ram",
+        return new Notice { Level = 1, Cause = "commit", Title = Language.T("notification.title.might"), Flyout = "commit",
                             Text = Language.T("notification.commit_low", "free", Drawing.FreeGb((float)c.CommitFree, false), "reserve", Drawing.FreeGb((float)c.CommitReserve, false)) };
     }
 

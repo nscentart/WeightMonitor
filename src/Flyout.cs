@@ -43,7 +43,7 @@ public partial class Flyout : Form {
         return true;
     }
 
-    public static string TypeOf(string zone) { return zone == "logo" ? "all" : zone == "commit" ? "ram" : zone; }
+    public static string TypeOf(string zone) { return zone == "logo" ? "all" : zone; }
 
     public static string Rule(string open, string clicked, string last, double msFromClosing) {
         if (open == clicked) return "close";

@@ -15,6 +15,11 @@ public class Details {
     [DllImport("kernel32.dll")] static extern IntPtr OpenProcess(uint access, bool inherits, int pid);
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)] static extern bool QueryFullProcessImageName(IntPtr h, int flag, StringBuilder text, ref int length);
     [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr h);
+    [DllImport("kernel32.dll")] static extern bool K32GetPerformanceInfo(ref PERFORMANCE p, uint size);
+    [StructLayout(LayoutKind.Sequential)] struct PERFORMANCE {
+        public uint Size; public UIntPtr CommitTotal, CommitLimit, CommitPeak, PhysicalTotal, PhysicalAvailable, SystemCache, KernelTotal, KernelPaged, KernelNonpaged, PageSize;
+        public uint HandleCount, ProcessCount, ThreadCount;
+    }
     [StructLayout(LayoutKind.Sequential)] struct MEMORY {
         public uint Length, Load; public ulong Physical, FreePhysical, Commitment, FreeCommitment, Virtual, FreeVirtual, Extended;
     }
@@ -30,7 +35,7 @@ public class Details {
     public static Details Instance;
     public const int DISKS = 16;
 
-    public readonly History Cpu, Gpu = new History(2), Ram = new History(1), Disks = new History(DISKS * 2);
+    public readonly History Cpu, Gpu = new History(2), Ram = new History(1), Virtual = new History(1), Disks = new History(DISKS * 2);
     public volatile Snapshot Current = new Snapshot();
     readonly int thread, core;
 
@@ -157,7 +162,7 @@ public class Details {
         snap.GpuMhz = l.GpuMhz; snap.GpuWatt = l.GpuWatt; snap.Fan = l.Fan;
         if (pdh != null) pdh.Collect();
 
-        var cpu = new Dictionary<App, double[]>(); var ram = new Dictionary<App, double[]>(); var io = new Dictionary<App, double[]>();
+        var cpu = new Dictionary<App, double[]>(); var ram = new Dictionary<App, double[]>(); var virt = new Dictionary<App, double[]>(); var io = new Dictionary<App, double[]>();
         var newOnes = new Dictionary<int, Proc>();
         processOfThread.Clear();
         if (Capture()) {
@@ -189,6 +194,8 @@ public class Details {
                     newOnes[pid] = pr;
                     long privateKey = Marshal.ReadInt64(p, 8);
                     if (privateKey > 0) Sum(ram, pr.App, 0, privateKey, 1);
+                    long commitKey = Marshal.ReadInt64(p, 184);
+                    if (commitKey > 0) Sum(virt, pr.App, 0, commitKey, 1);
                     if (pr.App.Compression) snap.Compressed = Marshal.ReadInt64(p, 144);
                 }
                 if (next == 0) break;
@@ -255,6 +262,7 @@ public class Details {
             snap.TotalRam = m.Physical; snap.UsedRam = m.Physical - m.FreePhysical;
             snap.Limit = m.Commitment; snap.Committed = m.Commitment - m.FreeCommitment;
         }
+        ReadPaging(snap);
         if (pdh != null) {
             snap.Modified = Math.Max(0, pdh.One("modified"));
             snap.Cache = snap.Modified + Math.Max(0, pdh.One("cache1")) + Math.Max(0, pdh.One("cache2")) + Math.Max(0, pdh.One("cache3"));
@@ -275,7 +283,33 @@ public class Details {
         Cpu.Add(totalCpu, cpu);
         Gpu.Add(new[] { Math.Max(0, d.Gpu.Usage), vramPercent }, gpu);
         Ram.Add(new double[] { Math.Max(0, d.Ram.Usage) }, ram);
+        Virtual.Add(new double[] { snap.Limit > 0 ? Math.Min(100, snap.Committed / snap.Limit * 100.0) : 0 }, virt);
         Disks.Add(totalDisks, io);
+    }
+
+    void ReadPaging(Snapshot snap) {
+        var pi = new PERFORMANCE(); pi.Size = (uint)Marshal.SizeOf(typeof(PERFORMANCE));
+        double page = 4096;
+        if (K32GetPerformanceInfo(ref pi, pi.Size)) {
+            page = Math.Max(1, (double)pi.PageSize.ToUInt64());
+            snap.CommitPeak = pi.CommitPeak.ToUInt64() * page;
+        }
+        IntPtr b = Marshal.AllocHGlobal(4096);
+        try {
+            int needs;
+            if (NtQuerySystemInformation(18, b, 4096, out needs) != 0) return;
+            double size = 0, used = 0;
+            int off = 0;
+            for (int i = 0; i < 16; i++) {
+                IntPtr e = new IntPtr(b.ToInt64() + off);
+                int next = Marshal.ReadInt32(e, 0);
+                size += (uint)Marshal.ReadInt32(e, 4) * page; used += (uint)Marshal.ReadInt32(e, 8) * page;
+                if (next <= 0 || off + next >= 4096 - 32) break;
+                off += next;
+            }
+            snap.PageFileSize = size; snap.PageFileUsed = used;
+        } catch (Exception ex) { Program.Log("details, paging file: " + ex.Message); }
+        finally { Marshal.FreeHGlobal(b); }
     }
 
     static int PidOf(string instance) {
@@ -313,11 +347,12 @@ public class Details {
             var tc = new double[1 + nt]; tc[0] = wave;
             for (int i = 0; i < nt; i++) tc[1 + i] = Math.Min(100, Math.Max(0, wave * (i % 8 == 1 ? 3.5 : i % 3 == 0 ? 1.6 : 0.4) + testCase.Next(6)));
             var ac = new Dictionary<App, double[]>(); var ag = new Dictionary<App, double[]>();
-            var ar = new Dictionary<App, double[]>(); var ad = new Dictionary<App, double[]>();
+            var ar = new Dictionary<App, double[]>(); var av = new Dictionary<App, double[]>(); var ad = new Dictionary<App, double[]>();
             for (int i = 0; i < apps.Count; i++) {
                 if (testCase.Next(5) > 0) ac[apps[i]] = new[] { wave / (i + 1.5) + testCase.NextDouble() };
                 if (i < 4) ag[apps[i]] = new[] { (i == 0 ? 7.0 : 2.0 / (i + 1)) + testCase.NextDouble(), (1.6 - i * 0.35) * 1073741824 };
                 ar[apps[i]] = new[] { (3.2 - i * 0.38) * 1073741824 + testCase.Next(20000000) };
+                av[apps[i]] = new[] { (4.6 - i * 0.52) * 1073741824 + testCase.Next(30000000) };
                 if (testCase.Next(3) == 0) ad[apps[i]] = new[] { testCase.Next(9000000 / (i + 1)) * 1.0, testCase.Next(3000000 / (i + 1)) * 1.0 };
             }
             var td = new double[DISKS * 2];
@@ -327,6 +362,7 @@ public class Details {
             x.Cpu.Add(tc, ac, s / 60);
             x.Gpu.Add(new[] { 9 + 6 * Math.Sin(s / 200.0) + testCase.Next(5), 14 + testCase.NextDouble() }, ag, s / 60);
             x.Ram.Add(new[] { 42 + 3 * Math.Sin(s / 900.0) + testCase.NextDouble() }, ar, s / 60);
+            x.Virtual.Add(new[] { 41 + 4 * Math.Sin(s / 700.0) + testCase.NextDouble() }, av, s / 60);
             x.Disks.Add(td, ad, s / 60);
         }
         var snap = new Snapshot { Thread = nt, Core = 16, Processes = 412, ThreadTotal = 6153, Handle = 214332, Uptime = 2 * 86400 + 3 * 3600 + 25 * 60 };
@@ -342,6 +378,7 @@ public class Details {
         snap.UsedVram = 4590; snap.TotalVram = 32607; snap.Shared = 156; snap.GpuMhz = 2407; snap.GpuWatt = 54.3f; snap.Fan = 0;
         double gb = 1073741824;
         snap.TotalRam = 127.6 * gb; snap.UsedRam = 53.1 * gb; snap.Committed = 61.4 * gb; snap.Limit = 146 * gb;
+        snap.CommitPeak = 78.2 * gb; snap.PageFileSize = 18.4 * gb; snap.PageFileUsed = 1.3 * gb;
         snap.Cache = 47.2 * gb; snap.Modified = 0.6 * gb; snap.PlaceDetached = 27.9 * gb; snap.Paging = 1.1 * gb; snap.NonPaging = 0.7 * gb; snap.Compressed = 0.4 * gb;
         snap.DiskEtw = true;
         x.Current = snap;

@@ -5,7 +5,7 @@ using System.IO;
 using System.Text;
 
 public static partial class Language {
-    static readonly HashSet<string> EQUAL = new HashSet<string> { "color.green","color.pink","time.hours_minutes","time.minutes","settings.memory","sensors.memory","sensors.copy","disks.count.one","network.up_average","network.down_average","temps.average","cpu.col_average","gpu.col_average","ram.col_average","disks.col_down_average","disks.col_up_average","settings.group.theme","theme.lime","theme.green","theme.pink" };
+    static readonly HashSet<string> EQUAL = new HashSet<string> { "color.green","color.pink","time.hours_minutes","time.minutes","settings.memory","sensors.memory","sensors.copy","disks.count.one","network.up_average","network.down_average","temps.average","cpu.col_average","gpu.col_average","ram.col_average","disks.col_down_average","disks.col_up_average","settings.group.theme","theme.lime","theme.green","theme.pink","commit.in_ram","commit.limit" };
 
     public static List<string> Test() {
         var r = new List<string>();

@@ -37,7 +37,7 @@ public static partial class Drawing {
         var network = new Network(); network.SampleData(); network.Activate = true;
         var p = Theme.ALL[0];
         var old = Theme.Current == p ? new int[0] : new[] { p.Backdrop, p.Panel, p.Capsule, p.Row, p.Empty, Color.FromArgb(38, 40, 46), Color.FromArgb(96, 112, 140) }.Select(c => c.ToArgb()).ToArray();
-        foreach (string type in new[] { "all", "cpu", "gpu", "ram", "disks", "network" }) {
+        foreach (string type in new[] { "all", "cpu", "gpu", "ram", "commit", "disks", "network" }) {
             int width = FlyoutWidth(type, 1f), h;
             using (var b1 = new Bitmap(width, 4000)) using (var g1 = Graphics.FromImage(b1)) h = Flyout(g1, type, width, 1f, d, network, 1, null);
             using (var b = new Bitmap(width, h)) {

@@ -31,6 +31,7 @@ Al iniciarse, el programa comprueba si hay una versión nueva y te avisa; tambi�
   - CPU: uso de cada hilo, frecuencias, temperaturas y los programas que más la usan.
   - GPU: uso de cada motor, memoria de vídeo, temperaturas y los programas que más la usan.
   - RAM: en uso, en caché y libre, y los programas que más ocupan.
+  - Memoria virtual (MV): cuánta memoria han reservado los programas (comprometida) frente al límite, que es la RAM más el archivo de paginación, y cuánta queda antes del límite. Muestra también la parte en el archivo de paginación, el pico, un gráfico y los programas que más reservan, cada uno con su botón Cerrar. Cuando queda poca, lo dice en rojo, con qué hacer. También se abre desde la fila «Comprometida» del panel de la RAM y desde su notificación.
   - Discos: nombre, tipo, temperatura y espacio libre de cada uno, lecturas y escrituras, y los programas que leen y escriben.
   - Red: un gráfico y **qué programa usa la conexión**. Velocidad por colores (verde, amarillo, naranja, rojo). El
     desplegable tiene siempre la misma altura en las tres pestañas: con muchos programas la lista se desplaza, con la rueda o con
@@ -70,6 +71,10 @@ Al iniciarse, el programa comprueba si hay una versión nueva y te avisa; tambi�
 | Discos | Red | Todo |
 |---|---|---|
 | ![](flyout-disks.png) | ![](flyout-network.png) | ![](flyout-overview.png) |
+
+| Memoria virtual (comprometida) |
+|---|
+| ![](flyout-commit.png) |
 
 ## Instalación
 1. Descarga `WeightMonitor.exe` con el enlace de arriba, en una carpeta nueva y vacía: cuando un programa se inicia como administrador, Windows
@@ -169,7 +174,7 @@ Una opción que no existe, o a la que le falta su valor, no pone nada en marcha:
 `--result file`, escribe ahí el motivo.
 
 Pruebas sin instalar: `WeightMonitor.exe --screenshot test.png --sample [--view extended|collected|compact]
-[--flyout cpu|gpu|ram|disks|network|all] [--tab 0|1|2]`, `--screenshot-settings test.png [--scale 1.5]`, `--screenshot-menu test.png`, `--screenshot-welcome test.png [--without-pawnio]`, `--screenshot-pawnio test.png`,
+[--flyout cpu|gpu|ram|commit|disks|network|all] [--tab 0|1|2]`, `--screenshot-settings test.png [--scale 1.5]`, `--screenshot-menu test.png`, `--screenshot-welcome test.png [--without-pawnio]`, `--screenshot-pawnio test.png`,
 `--screenshot-update test.png`, con `--flyout` también `--screen-height 400 --scroll 200` (un desplegable más alto que la pantalla) y `--programs 40` (cuántos programas en el desplegable Red),
 `--language it|en|fr|es|de --color blue|green|lemon|pink|purple --appearance auto|dark|light` (con cualquier imagen: solo se aplican esa vez y no se guardan), `--close-button` (el botón Cerrar en los programas de ejemplo de las imágenes de ejemplo), `--test-themes [--result file]` (cada tema completo y legible, recordado; un valor sin sentido no rompe nada),
 `--test-notifications [--result file]` (datos falsos: escribe qué notificaciones se emitirían y su texto, sin mostrarlas), `--test-flyouts [--result file]` (dónde se abren los desplegables y cómo se desplazan), `--test-disks [--result file]` (un cambio falso en los contadores reales de los discos), `--test-etw [--result file]` (la lectura por programa, interrumpida de verdad en una sesión aparte: requiere permisos de administrador), `--test-close [--result file]` (el botón Cerrar en una lista falsa de programas: quién queda excluido y el número de proceso reutilizado. No cierra nada), `--test-languages [--result file]` (los textos de los cinco idiomas), `--test-license [--result file]` (la licencia con una clave de prueba creada en memoria, y los textos en los cinco idiomas), `--screenshot-license test.png [--holder nombre] [--message other|revoked|invalid|unreadable|active|removed]` (la ventana de la licencia; con cada foto, `--holder` muestra una licencia comercial de ejemplo, y el archivo real de la licencia no se ve nunca), `--screenshot-confirm test.png [--windows 3] [--details]`, con `--flyout` también `--close-button`, con `--screenshot` también `--background light`, `--sentence yes`, `--show cpu,ram`, `--test-security [--result file] [--signature file]` (traslado de la configuración, direcciones, comprobación de actualizaciones, elección de PawnIO, reinicio de la lectura, limpieza del informe, opciones de la línea de comandos), `--test-migration --data carpeta [--result file]` (la configuración, la licencia y el registro escritos por las versiones 1.0 y 1.1, leídos de los archivos de ejemplo de `tests/legacy-data`), `--test-capture` (con una captura abierta, anota en el registro quién está en

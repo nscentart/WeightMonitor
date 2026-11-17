@@ -31,6 +31,7 @@ At startup the program checks whether there is a new version and tells you; you 
   - CPU: usage of each thread, frequencies, temperatures and the programs using it most.
   - GPU: usage of each engine, video memory, temperatures and the programs using it most.
   - RAM: in use, cached and free, and the programs holding the most.
+  - Virtual memory (VM): how much memory programs have reserved (committed) against the limit, which is RAM plus the paging file, and how much is left before it. It also shows the part in the paging file, the peak, a graph and the programs reserving the most, each with its Close button. When little is left it says so in red, with what to do. It also opens from the "Committed" row of the RAM flyout and from its notification.
   - Disks: name, type, temperature and free space of each one, reads and writes, and the programs reading and writing.
   - Network: a graph and **which program is using the connection**. Speed is shown in color (green, yellow, orange, red). The
     flyout always has the same height in all three tabs: with many programs the list scrolls, with the mouse wheel or with
@@ -70,6 +71,10 @@ At startup the program checks whether there is a new version and tells you; you 
 | Disks | Network | Everything |
 |---|---|---|
 | ![](docs/en/flyout-disks.png) | ![](docs/en/flyout-network.png) | ![](docs/en/flyout-overview.png) |
+
+| Virtual memory (committed) |
+|---|
+| ![](docs/en/flyout-commit.png) |
 
 ## Installing
 1. Download `WeightMonitor.exe` with the link above, into a new, empty folder: when a program starts as administrator, Windows
@@ -169,7 +174,7 @@ An option that doesn't exist, or is missing its value, starts nothing: the progr
 `--result file`, writes the reason there.
 
 Tests without installing: `WeightMonitor.exe --screenshot test.png --sample [--view extended|collected|compact]
-[--flyout cpu|gpu|ram|disks|network|all] [--tab 0|1|2]`, `--screenshot-settings test.png [--scale 1.5]`, `--screenshot-menu test.png`, `--screenshot-welcome test.png [--without-pawnio]`, `--screenshot-pawnio test.png`,
+[--flyout cpu|gpu|ram|commit|disks|network|all] [--tab 0|1|2]`, `--screenshot-settings test.png [--scale 1.5]`, `--screenshot-menu test.png`, `--screenshot-welcome test.png [--without-pawnio]`, `--screenshot-pawnio test.png`,
 `--screenshot-update test.png`, with `--flyout` also `--screen-height 400 --scroll 200` (a flyout taller than the screen) and `--programs 40` (how many programs in the Network flyout),
 `--language it|en|fr|es|de --color blue|green|lemon|pink|purple --appearance auto|dark|light` (with any picture: they apply only that one time and are not saved), `--close-button` (the Close button on the sample programs in sample pictures), `--test-themes [--result file]` (every theme is complete, readable and remembered, and a nonsense value breaks nothing),
 `--test-notifications [--result file]` (fake data: writes which notifications would fire and their text, without showing them), `--test-flyouts [--result file]` (where flyouts open and how they scroll), `--test-disks [--result file]` (a fake change on the real disk counters), `--test-etw [--result file]` (per-program reading, actually interrupted on a separate session: needs administrator rights), `--test-close [--result file]` (the Close button on a fake list of programs: which programs stay excluded and the reused process number. It closes nothing), `--test-languages [--result file]` (the texts of the five languages), `--test-license [--result file]` (the license with a test key created in memory, and the labels in the five languages), `--screenshot-license test.png [--holder name] [--message other|revoked|invalid|unreadable|active|removed]` (the license window; with every photo `--holder` shows an example commercial license, and the real license file is never shown), `--screenshot-confirm test.png [--windows 3] [--details]`, with `--flyout` also `--close-button`, with `--screenshot` also `--background light`, `--sentence yes`, `--show cpu,ram`, `--test-security [--result file] [--signature file]` (moving the settings, addresses, update check, PawnIO choice, restarting the reading, cleaning the report, command-line options), `--test-migration --data folder [--result file]` (the settings, license and logs written by versions 1.0 and 1.1, read from the sample files in `tests/legacy-data`), `--test-capture` (with a capture open, it logs what is at
