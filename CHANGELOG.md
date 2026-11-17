@@ -1,7 +1,9 @@
 # Changelog
 
-## 1.2 (06/11/2026)
-Code base rewritten in English and cleaned up. The program does the same as 1.1 and looks the same.
+## 1.2 (17/11/2026)
+Code base rewritten in English and cleaned up, a fix for the bar and a new memory reading.
+- **Bar:** the bar never shows the red X again. If a drawing fails, that part shows "n/d" for a moment and the program tries again at the next refresh.
+- **Committed memory:** the bar, the tooltip, the overview and the RAM flyout show the committed memory. When less than 10 GB is left before the limit, it turns red and a notification warns you.
 - **Code:** folders, files, classes, methods, option names, log lines and test descriptions are in English, and the source holds no comments.
 - **Layout:** `src` (with the tests in `src/Tests`), `locales`, `assets`, `scripts`, `tests` and `docs`; everything the build produces goes to `bin`.
 - **Files:** the program now writes `data\settings.ini` and `data\license.txt`. The files written by 1.0 and 1.1 (`dati\impostazioni.ini`, `dati\licenza.txt`, the old log and the old temporary folders) are read once when the new ones are missing and are never changed or deleted by the program while it runs.
